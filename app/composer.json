@@ -1,0 +1,19 @@
+{
+    "name": "ramapriya/kafka-php",
+    "description": "example for working with Kafka in PHP",
+    "authors": [
+        {
+            "name": "Roman Gonyukov",
+            "email": "stay.funeral@gmail.com",
+            "role": "developer"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Ramapriya\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^8.1"
+    }
+}

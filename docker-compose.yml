@@ -1,0 +1,80 @@
+version: "3.8"
+
+services:
+
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    hostname: zookeeper
+    container_name: zookeeper
+    restart: always
+    ports:
+      - "2181:2181"
+    volumes:
+      - "zookeeper_data:/bitnami"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka:
+    image: bitnami/kafka:latest
+    hostname: kafka
+    container_name: kafka
+    restart: always
+    ports:
+      - "9092:9092"
+    volumes:
+      - "kafka_data:/bitnami"
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    hostname: kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    restart: always
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=localhost:2181
+      - KAFKA_CLUSTERS_0_READONLY=false
+    depends_on:
+      - kafka
+
+  php-fpm:
+    container_name: php-fpm
+    hostname: php-fpm
+    build:
+      context: ./docker/php
+      args:
+        - PUID=${PUID}
+        - PGID=${PGID}
+    restart: unless-stopped
+    volumes:
+      - ./app:/data
+    ports:
+      - '9000:9000'
+    depends_on:
+      - kafka
+
+  nginx:
+    container_name: nginx
+    hostname: nginx
+    build:
+      context: ./docker/nginx
+    volumes:
+      - ./app:/data:rw
+      - ./logs/nginx:/var/log/nginx
+    ports:
+      - ${NGINX_HOST_HTTP_PORT}:80
+    depends_on:
+      - php-fpm
+
+volumes:
+  zookeeper_data:
+    driver: local
+  kafka_data:
+    driver: local
