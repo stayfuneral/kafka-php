@@ -59,6 +59,17 @@ services:
       - '9000:9000'
     depends_on:
       - kafka
+      - db
+
+  db:
+    image: percona
+    restart: always
+    volumes:
+      - ./db:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123
+      MYSQL_DATABASE: bx-kafka
+
 
   nginx:
     container_name: nginx
