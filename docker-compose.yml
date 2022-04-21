@@ -2,39 +2,39 @@ version: "3.8"
 
 services:
 
-  zookeeper:
+  zookeeper-db:
     image: bitnami/zookeeper:latest
-    hostname: zookeeper
-    container_name: zookeeper
+    hostname: zookeeper-db
+    container_name: zookeeper-db
     restart: always
     ports:
-      - "2181:2181"
+      - "21810:2181"
     volumes:
       - "zookeeper_data:/bitnami"
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
 
-  kafka:
+  kafka-broker:
     image: bitnami/kafka:latest
-    hostname: kafka
-    container_name: kafka
+    hostname: kafka-broker
+    container_name: kafka-broker
     restart: always
     ports:
-      - "9092:9092"
+      - "9091:9092"
     volumes:
       - "kafka_data:/bitnami"
     environment:
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
-      - zookeeper
+      - zookeeper-db
 
-  kafka-ui:
+  kafka-ui-web:
     image: provectuslabs/kafka-ui
-    hostname: kafka-ui
-    container_name: kafka-ui
+    hostname: kafka-ui-web
+    container_name: kafka-ui-web
     ports:
-      - "8080:8080"
+      - "8088:8080"
     restart: always
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
@@ -42,11 +42,11 @@ services:
       - KAFKA_CLUSTERS_0_ZOOKEEPER=localhost:2181
       - KAFKA_CLUSTERS_0_READONLY=false
     depends_on:
-      - kafka
+      - kafka-broker
 
-  php-fpm:
-    container_name: php-fpm
-    hostname: php-fpm
+  kafka-fpm:
+    container_name: kafka-fpm
+    hostname: kafka-fpm
     build:
       context: ./docker/php
       args:
@@ -58,11 +58,27 @@ services:
     ports:
       - '9000:9000'
     depends_on:
-      - kafka
+      - kafka-broker
+      - mariadb
 
-  nginx:
-    container_name: nginx
-    hostname: nginx
+  mariadb:
+    image: mariadb
+    container_name: mariadb
+    hostname: mariadb
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: '123'
+      MYSQL_DATABASE: 'kafka-bx'
+
+
+  nginx-web:
+    container_name: nginx-web
+    hostname: nginx-web
+    restart: always
     build:
       context: ./docker/nginx
     volumes:
@@ -71,7 +87,7 @@ services:
     ports:
       - ${NGINX_HOST_HTTP_PORT}:80
     depends_on:
-      - php-fpm
+      - kafka-fpm
 
 volumes:
   zookeeper_data:

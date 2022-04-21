@@ -1,4 +1,4 @@
-FROM php:8.1-fpm-alpine
+FROM php:7.4-fpm-alpine
 
 RUN apk add tzdata && \
     cp /usr/share/zoneinfo/Asia/Novosibirsk /etc/localtime && \
@@ -22,14 +22,19 @@ RUN cd /tmp \
         && docker-php-ext-enable rdkafka \
         && rm -rf /tmp/librdkafka
 
-RUN echo "extension=rdkafka.so" > /usr/local/etc/php/conf.d/rdkafka.ini
+RUN echo "extension=rdkafka.so" > /usr/local/etc/php/conf.d/rdkafka.ini &&\
+    echo "date.timezone=Asia/Novosibirsk" > /usr//local/etc/php/conf.d/bitrix.ini
+
+COPY ./conf.d/bitrix.ini /usr/local/etc/php/conf.d/bitrix.ini
+
+
+
+RUN mkdir -p /home/www-data/php/sessions &&\
+    chown -R www-data:www-data /home/www-data/php/sessions && \
+    chmod -R 777 /home/www-data/php/sessions
 
 RUN docker-php-ext-install mysqli && \
-    docker-php-ext-enable mysqli && \
-    mkdir -p /var/local/php/sessions &&\
-    chown -R www-data:www-data /var/local/php/sessions
-
-
+    docker-php-ext-enable mysqli
 
 # Configure non-root user.
 ARG PUID=1000
